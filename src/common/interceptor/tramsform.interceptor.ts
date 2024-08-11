@@ -5,7 +5,8 @@ import {
   Injectable,
   NestInterceptor,
 } from '@nestjs/common';
-import { catchError, map, Observable, throwError } from 'rxjs';
+import { log } from 'console';
+import { catchError, map, Observable, throwError, timestamp } from 'rxjs';
 
 @Injectable()
 export class CustomResponseInterceptor implements NestInterceptor {
@@ -24,13 +25,16 @@ export class CustomResponseInterceptor implements NestInterceptor {
       })),
       catchError((err) => {
         const statusCode = err instanceof HttpException ? err.getStatus() : 500;
+
         const errorResponse = {
           statusCode,
           message: err.message || 'Internal server error',
           error: err.name || 'Error',
           timestamp: Date.now(),
           path: request.url,
-          data: null,
+          data: Array.isArray(err.response.message)
+            ? err.response.message
+            : null,
         };
         return throwError(() => new HttpException(errorResponse, statusCode));
       }),
